@@ -20,13 +20,10 @@ from itertools import imap
 import threading
 import time
 import hashlib
-import sys
 
 __b58chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 __b58base = len(__b58chars)
 
-global PUBKEY_ADDRESS
-global SCRIPT_ADDRESS
 PUBKEY_ADDRESS = 0
 SCRIPT_ADDRESS = 5
 
@@ -109,14 +106,9 @@ def header_from_string(s):
 
 
 def hash_160(public_key):
-    try:
-        md = hashlib.new('ripemd160')
-        md.update(hashlib.sha256(public_key).digest())
-        return md.digest()
-    except:
-        import ripemd
-        md = ripemd.new(hashlib.sha256(public_key).digest())
-        return md.digest()
+    md = hashlib.new('ripemd160')
+    md.update(hashlib.sha256(public_key).digest())
+    return md.digest()
 
 
 def public_key_to_pubkey_address(public_key):
@@ -126,13 +118,6 @@ def public_key_to_pubkey_address(public_key):
 def public_key_to_bc_address(public_key):
     """ deprecated """
     return public_key_to_pubkey_address(public_key)
-
-
-def hash_160_to_pubkey_address(h160, addrtype=None):
-    """ deprecated """
-    if not addrtype:
-        addrtype = PUBKEY_ADDRESS
-    return hash_160_to_address(h160, addrtype)
 
 
 def hash_160_to_pubkey_address(h160):
@@ -163,8 +148,8 @@ def hash_160_to_address(h160, addrtype=0):
 def bc_address_to_hash_160(addr):
     if addr is None or len(addr) is 0:
         return None
-    bytes = b58decode(addr, 25)
-    return bytes[1:21] if bytes is not None else None
+    addrBytes = b58decode(addr, 25)
+    return addrBytes[1:21] if addrBytes is not None else None
 
 
 def b58encode(v):
@@ -221,16 +206,16 @@ def b58decode(v, length):
 
 
 def EncodeBase58Check(vchIn):
-    hash = Hash(vchIn)
-    return b58encode(vchIn + hash[0:4])
+    vchInHash = Hash(vchIn)
+    return b58encode(vchIn + vchInHash[0:4])
 
 
 def DecodeBase58Check(psz):
     vchRet = b58decode(psz, None)
     key = vchRet[0:-4]
     csum = vchRet[-4:]
-    hash = Hash(key)
-    cs32 = hash[0:4]
+    keyHash = Hash(key)
+    cs32 = keyHash[0:4]
     if cs32 != csum:
         return None
     else:

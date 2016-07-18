@@ -1,21 +1,17 @@
 ﻿import hashlib
-from json import dumps, load
-import json
 import os
 from Queue import Queue
 import random
 import sys
 import time
 import threading
-import urllib
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
-from decimal import Decimal
 
-import deserialize
-from processor import Processor, print_log
-from storage import Storage
-from utils import logger, hash_decode, hash_encode, Hash, header_from_string, header_to_string, ProfiledThread, rev_hex, \
-    int_to_hex, PoWHash
+import src.deserialize as deserialize
+from src.processor import Processor, print_log
+from src.storage import Storage
+from src.utils import logger, hash_decode, hash_encode, Hash, header_from_string, header_to_string, ProfiledThread, rev_hex, \
+    int_to_hex
 
 HEADER_SIZE = 112
 BLOCKS_PER_CHUNK = 96
@@ -53,6 +49,12 @@ class BlockchainProcessor(Processor):
         self.mempool_lock = threading.Lock()
 
         self.address_queue = Queue()
+
+        self.header = None
+        self.start_catchup_height = None
+        self.relayfee = None
+        self.headers_offset = None
+        self.lbrycrdd_height = None
 
         try:
             self.test_reorgs = config.getboolean('leveldb', 'test_reorgs')  # simulate random blockchain reorgs

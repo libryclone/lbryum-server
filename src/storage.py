@@ -1,25 +1,22 @@
 import plyvel
 import ast
-import hashlib
 import os
-import sys
 import threading
 
-from processor import print_log, logger
-from utils import bc_address_to_hash_160, hash_160_to_pubkey_address, hex_to_int, int_to_hex, Hash
+from src.processor import print_log, logger
+from src.utils import bc_address_to_hash_160, hex_to_int, int_to_hex, Hash
 
-"""
-Patricia tree for hashing unspents
-
-"""
 
 # increase this when database needs to be updated
-global GENESIS_HASH
 GENESIS_HASH = '9c89283ba0f3227f6c03b70216b9f665f0118d5e0fa729cedf4fb34d6a34f463'
 DB_VERSION = 3
 KEYLENGTH = 56  # 20 + 32 + 4
 
 
+"""
+Patricia tree for hashing unspents
+
+"""
 class Node(object):
     def __init__(self, s):
         self.k = int(s[0:32].encode('hex'), 16)
@@ -169,6 +166,7 @@ class Storage(object):
         self.parents = {}
         self.skip_batch = {}
         self.test_reorgs = test_reorgs
+        self.root_value = None
         # init path
         self.dbpath = config.get('leveldb', 'path')
         if not os.path.exists(self.dbpath):
@@ -289,7 +287,7 @@ class Storage(object):
         out = set(out)
         # sort by height then tx_hash
         out = sorted(out)
-        return map(lambda x: {'height': x[0], 'tx_hash': x[1]}, out)
+        return [{'height': x[0], 'tx_hash': x[1]} for x in out]
 
     def get_address(self, txi):
         return self.db_addr.get(txi)

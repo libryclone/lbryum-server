@@ -21,7 +21,6 @@ import logging
 import socket
 import sys
 import time
-import threading
 import json
 import os
 import imp
@@ -29,12 +28,12 @@ import imp
 if os.path.dirname(os.path.realpath(__file__)) == os.getcwd():
     imp.load_module('lbryumserver', *imp.find_module('src'))
 
-from lbryumserver import storage, networks, utils
-from lbryumserver.processor import Dispatcher, print_log
-from lbryumserver.server_processor import ServerProcessor
-from lbryumserver.blockchain_processor import BlockchainProcessor
-from lbryumserver.stratum_tcp import TcpServer
-from lbryumserver.stratum_http import HttpServer
+from src import storage, networks, utils
+from src.processor import Dispatcher, print_log
+from src.server_processor import ServerProcessor
+from src.blockchain_processor import BlockchainProcessor
+from src.stratum_tcp import TcpServer
+from src.stratum_http import HttpServer
 
 logging.basicConfig()
 
@@ -64,8 +63,8 @@ def load_banner(config):
 
 
 def setup_network_params(config):
-    type = config.get('network', 'type')
-    params = networks.params.get(type)
+    network_type = config.get('network', 'type')
+    params = networks.params.get(network_type)
     utils.PUBKEY_ADDRESS = int(params.get('pubkey_address'))
     utils.SCRIPT_ADDRESS = int(params.get('script_address'))
     storage.GENESIS_HASH = params.get('genesis_hash')
@@ -134,10 +133,10 @@ def create_config(filename=None):
     return config
 
 
-def run_rpc_command(params, lbryum_rpc_port):
+def run_rpc_command(params, rpc_port):
     cmd = params[0]
     import xmlrpclib
-    server = xmlrpclib.ServerProxy('http://localhost:%d' % lbryum_rpc_port)
+    server = xmlrpclib.ServerProxy('http://localhost:%d' % rpc_port)
     func = getattr(server, cmd)
     r = func(*params[1:])
     if cmd == 'sessions':
@@ -172,13 +171,12 @@ def cmd_getinfo():
 
 
 def cmd_sessions():
-    return map(lambda s: {"time": s.time,
-                          "name": s.name,
-                          "address": s.address,
-                          "version": s.version,
-                          "subscriptions": len(s.subscriptions)},
-               dispatcher.request_dispatcher.get_sessions())
-
+    return [{"time": s.time,
+             "name": s.name,
+             "address": s.address,
+             "version": s.version,
+             "subscriptions": len(s.subscriptions)}
+            for s in dispatcher.request_dispatcher.get_sessions()]
 
 def cmd_numsessions():
     return len(dispatcher.request_dispatcher.get_sessions())
@@ -203,7 +201,6 @@ def cmd_guppy():
 
 def cmd_debug(s):
     import traceback
-    import gc
     if s:
         try:
             result = str(eval(s))
@@ -213,9 +210,9 @@ def cmd_debug(s):
         return result
 
 
-def get_port(config, name):
+def get_port(conf, name):
     try:
-        return config.getint('server', name)
+        return conf.getint('server', name)
     except:
         return None
 
@@ -289,8 +286,8 @@ def start_server(config):
         https_server = HttpServer(dispatcher, host, stratum_http_ssl_port, True, ssl_certfile, ssl_keyfile)
         transports.append(https_server)
 
-    for server in transports:
-        server.start()
+    for transport in transports:
+        transport.start()
 
 
 def stop_server():
@@ -305,9 +302,9 @@ if __name__ == '__main__':
     parser.add_argument('--conf', metavar='path', default=None, help='specify a configuration file')
     parser.add_argument('command', nargs='*', default=[], help='send a command to the server')
     args = parser.parse_args()
-    config = create_config(args.conf)
+    serverConfig = create_config(args.conf)
 
-    lbryum_rpc_port = get_port(config, 'lbryum_rpc_port')
+    lbryum_rpc_port = get_port(serverConfig, 'lbryum_rpc_port')
 
     if len(args.command) >= 1:
         try:
@@ -327,26 +324,26 @@ if __name__ == '__main__':
         print "server already running"
         sys.exit(1)
 
-    start_server(config)
+    start_server(serverConfig)
 
     from SimpleXMLRPCServer import SimpleXMLRPCServer
 
-    server = SimpleXMLRPCServer(('localhost', lbryum_rpc_port), allow_none=True, logRequests=False)
-    server.register_function(lambda: os.getpid(), 'getpid')
-    server.register_function(shared.stop, 'stop')
-    server.register_function(cmd_getinfo, 'getinfo')
-    server.register_function(cmd_sessions, 'sessions')
-    server.register_function(cmd_numsessions, 'numsessions')
-    server.register_function(cmd_peers, 'peers')
-    server.register_function(cmd_numpeers, 'numpeers')
-    server.register_function(cmd_debug, 'debug')
-    server.register_function(cmd_guppy, 'guppy')
-    server.register_function(cmd_banner_update, 'banner_update')
-    server.socket.settimeout(1)
+    rpc_server = SimpleXMLRPCServer(('localhost', lbryum_rpc_port), allow_none=True, logRequests=False)
+    rpc_server.register_function(lambda: os.getpid(), 'getpid')
+    rpc_server.register_function(shared.stop, 'stop')
+    rpc_server.register_function(cmd_getinfo, 'getinfo')
+    rpc_server.register_function(cmd_sessions, 'sessions')
+    rpc_server.register_function(cmd_numsessions, 'numsessions')
+    rpc_server.register_function(cmd_peers, 'peers')
+    rpc_server.register_function(cmd_numpeers, 'numpeers')
+    rpc_server.register_function(cmd_debug, 'debug')
+    rpc_server.register_function(cmd_guppy, 'guppy')
+    rpc_server.register_function(cmd_banner_update, 'banner_update')
+    rpc_server.socket.settimeout(1)
 
     while not shared.stopped():
         try:
-            server.handle_request()
+            rpc_server.handle_request()
         except socket.timeout:
             continue
         except:

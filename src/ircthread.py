@@ -3,9 +3,9 @@ import time
 import socket
 import threading
 import irc.client
-from utils import logger
-from utils import Hash
-from version import VERSION
+
+from src.utils import logger, Hash
+from src.version import VERSION
 
 out_msg = []
 

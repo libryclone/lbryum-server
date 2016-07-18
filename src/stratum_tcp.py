@@ -4,18 +4,17 @@ import socket
 import select
 import threading
 import time
-import sys
+import ssl
 
 from decimal import Decimal
-from processor import Session, Dispatcher
-from utils import print_log, logger
+from src.processor import Session
+from src.utils import print_log, logger
 
 READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
 READ_WRITE = READ_ONLY | select.POLLOUT
 WRITE_ONLY = select.POLLOUT
 TIMEOUT = 100
 
-import ssl
 
 
 class TcpSession(Session):
@@ -24,7 +23,6 @@ class TcpSession(Session):
         self.use_ssl = use_ssl
         self.raw_connection = connection
         if use_ssl:
-            import ssl
             self._connection = ssl.wrap_socket(
                 connection,
                 server_side=True,
@@ -183,7 +181,7 @@ class TcpServer(threading.Thread):
             if self.shared.paused():
                 sessions = self.fd_to_session.keys()
                 if sessions:
-                    logger.info("closing %d sessions" % len(sessions))
+                    logger.info("closing %d sessions", len(sessions))
                 for fd in sessions:
                     stop_session(fd)
                 time.sleep(1)

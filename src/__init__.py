@@ -1,9 +1,10 @@
-import utils
-import storage
-import deserialize
-import networks
-import blockchain_processor
-import processor
-import version
-import irc
-import stratum_tcp, stratum_http
+import src.utils
+import src.storage
+import src.deserialize
+import src.networks
+import src.blockchain_processor
+import src.processor
+import src.version
+import src.ircthread
+import src.stratum_tcp
+import src.stratum_http

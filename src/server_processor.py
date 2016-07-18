@@ -1,14 +1,9 @@
-import socket
-import sys
 import threading
-import time
 import Queue
 
-from processor import Processor
-from utils import Hash, print_log
-from version import VERSION
-from utils import logger
-from ircthread import IrcThread
+from src.processor import Processor
+from src.version import VERSION
+from src.ircthread import IrcThread
 
 
 class ServerProcessor(Processor):
@@ -49,7 +44,7 @@ class ServerProcessor(Processor):
 
     def process(self, request):
         method = request['method']
-        params = request['params']
+        #params = request['params']
         result = None
 
         if method == 'server.banner':

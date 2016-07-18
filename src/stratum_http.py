@@ -30,7 +30,6 @@ import Queue
 import SimpleXMLRPCServer
 import socket
 import SocketServer
-import sys
 import time
 import threading
 import traceback
@@ -276,7 +275,6 @@ class StratumHTTPServer(SocketServer.TCPServer, StratumJSONRPCDispatcher):
         StratumJSONRPCDispatcher.__init__(self, encoding)
         # TCPServer.__init__ has an extra parameter on 2.6+, so
         # check Python version and decide on how to call it
-        vi = sys.version_info
         self.address_family = address_family
         if USE_UNIX_SOCKETS and address_family == socket.AF_UNIX:
             # Unix sockets can't be bound if they already exist in the
@@ -308,7 +306,6 @@ class StratumHTTPSSLServer(SSLTCPServer, StratumJSONRPCDispatcher):
         StratumJSONRPCDispatcher.__init__(self, encoding)
         # TCPServer.__init__ has an extra parameter on 2.6+, so
         # check Python version and decide on how to call it
-        vi = sys.version_info
         self.address_family = address_family
         if USE_UNIX_SOCKETS and address_family == socket.AF_UNIX:
             # Unix sockets can't be bound if they already exist in the
@@ -354,6 +351,7 @@ class HttpServer(threading.Thread):
         self.certfile = certfile
         self.keyfile = keyfile
         self.lock = threading.Lock()
+        self.server = None
 
     def run(self):
         # see http://code.google.com/p/jsonrpclib/

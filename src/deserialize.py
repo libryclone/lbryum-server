@@ -3,12 +3,10 @@
 #
 
 import mmap
-import string
 import struct
 import types
 
-from utils import hash_160_to_pubkey_address, hash_160_to_script_address, public_key_to_pubkey_address, hash_encode, \
-    hash_160
+from src.utils import hash_160_to_pubkey_address, hash_160_to_script_address, public_key_to_pubkey_address, hash_encode
 
 
 class SerializationError(Exception):
@@ -26,14 +24,14 @@ class BCDataStream(object):
         self.input = None
         self.read_cursor = 0
 
-    def write(self, bytes):  # Initialize with string of bytes
+    def write(self, strBytes):  # Initialize with string of bytes
         if self.input is None:
-            self.input = bytes
+            self.input = strBytes
         else:
-            self.input += bytes
+            self.input += strBytes
 
-    def map_file(self, file, start):  # Initialize with bytes from file
-        self.input = mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ)
+    def map_file(self, fileToMap, start):  # Initialize with bytes from file
+        self.input = mmap.mmap(fileToMap.fileno(), 0, access=mmap.ACCESS_READ)
         self.read_cursor = start
 
     def seek_file(self, position):
@@ -60,10 +58,10 @@ class BCDataStream(object):
 
         return self.read_bytes(length)
 
-    def write_string(self, string):
+    def write_string(self, stringToWrite):
         # Length-encoded as with read-string
-        self.write_compact_size(len(string))
-        self.write(string)
+        self.write_compact_size(len(stringToWrite))
+        self.write(stringToWrite)
 
     def read_bytes(self, length):
         try:
@@ -143,13 +141,13 @@ class BCDataStream(object):
             self.write('\xff')
             self._write_num('<Q', size)
 
-    def _read_num(self, format):
-        (i,) = struct.unpack_from(format, self.input, self.read_cursor)
-        self.read_cursor += struct.calcsize(format)
+    def _read_num(self, readFormat):
+        (i,) = struct.unpack_from(readFormat, self.input, self.read_cursor)
+        self.read_cursor += struct.calcsize(readFormat)
         return i
 
-    def _write_num(self, format, num):
-        s = struct.pack(format, num)
+    def _write_num(self, writeFormat, num):
+        s = struct.pack(writeFormat, num)
         self.write(s)
 
 
@@ -199,13 +197,13 @@ class Enumeration:
 
 
 # This function comes from bitcointools, bct-LICENSE.txt.
-def long_hex(bytes):
-    return bytes.encode('hex_codec')
+def long_hex(hexBytes):
+    return hexBytes.encode('hex_codec')
 
 
 # This function comes from bitcointools, bct-LICENSE.txt.
-def short_hex(bytes):
-    t = bytes.encode('hex_codec')
+def short_hex(hexBytes):
+    t = hexBytes.encode('hex_codec')
     if len(t) < 11:
         return t
     return t[0:4] + "..." + t[-4:]
@@ -272,29 +270,29 @@ opcodes = Enumeration("Opcodes", [
 ])
 
 
-def script_GetOp(bytes):
+def script_GetOp(scriptBytes):
     i = 0
-    while i < len(bytes):
+    while i < len(scriptBytes):
         vch = None
-        opcode = ord(bytes[i])
+        opcode = ord(scriptBytes[i])
         i += 1
 
         if opcode <= opcodes.OP_PUSHDATA4:
             nSize = opcode
             if opcode == opcodes.OP_PUSHDATA1:
-                nSize = ord(bytes[i])
+                nSize = ord(scriptBytes[i])
                 i += 1
             elif opcode == opcodes.OP_PUSHDATA2:
-                (nSize,) = struct.unpack_from('<H', bytes, i)
+                (nSize,) = struct.unpack_from('<H', scriptBytes, i)
                 i += 2
             elif opcode == opcodes.OP_PUSHDATA4:
-                (nSize,) = struct.unpack_from('<I', bytes, i)
+                (nSize,) = struct.unpack_from('<I', scriptBytes, i)
                 i += 4
-            if i + nSize > len(bytes):
-                vch = "_INVALID_" + bytes[i:]
-                i = len(bytes)
+            if i + nSize > len(scriptBytes):
+                vch = "_INVALID_" + scriptBytes[i:]
+                i = len(scriptBytes)
             else:
-                vch = bytes[i:i + nSize]
+                vch = scriptBytes[i:i + nSize]
                 i += nSize
 
         yield (opcode, vch, i)
@@ -307,9 +305,9 @@ def script_GetOpName(opcode):
         return "InvalidOp_" + str(opcode)
 
 
-def decode_script(bytes):
+def decode_script(scriptBytes):
     result = ''
-    for (opcode, vch, i) in script_GetOp(bytes):
+    for (opcode, vch, i) in script_GetOp(scriptBytes):
         if len(result) > 0:
             result += " "
         if opcode <= opcodes.OP_PUSHDATA4:
@@ -408,9 +406,9 @@ def decode_claim_script(decoded_script):
     return claim, decoded_script[op:]
 
 
-def get_address_from_output_script(bytes):
+def get_address_from_output_script(scriptBytes):
     try:
-        decoded = [x for x in script_GetOp(bytes)]
+        decoded = [x for x in script_GetOp(scriptBytes)]
     except:
         return None
     r = decode_claim_script(decoded)
