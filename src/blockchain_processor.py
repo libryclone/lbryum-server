@@ -445,6 +445,7 @@ class BlockchainProcessor(Processor):
             result = self.process(request, cache_only=True)
         except BaseException as e:
             print_log("Bad request from", session.address, str(e))
+            print_log("Request contents: ", str(request))
             self.push_response(session, {'id': message_id, 'error': str(e)})
             return
         except:
