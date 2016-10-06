@@ -114,7 +114,7 @@ def create_config(filename=None):
 
     # set network parameters
     config.add_section('network')
-    config.set('network', 'type', 'lbrycrd_main')
+    config.set('network', 'type', 'lbrycrd_regtest')
 
     # try to find the config file in the default paths
     if not filename:
