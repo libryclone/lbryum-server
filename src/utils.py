@@ -150,9 +150,9 @@ def hash_160_to_address(h160, addrtype=0):
         return None
 
     if addrtype == 0:
-        c = chr(85)
+        c = chr(111)
     elif addrtype == 5:
-        c = chr(122)
+        c = chr(196)
 
     vh160 = c + h160
     h = Hash(vh160)
