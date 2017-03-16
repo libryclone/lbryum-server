@@ -4,12 +4,13 @@ import os
 import sys
 
 if sys.platform == "darwin":
-    os.environ['CFLAGS'] = "-mmacosx-version-min=10.7 -stdlib=libc++ -I/usr/local/Cellar/leveldb/1.19/include"
-    os.environ['LDFLAGS'] = "-L/usr/local/Cellar/leveldb/1.19/lib"
+    os.environ['CFLAGS'] = "-mmacosx-version-min=10.7 -stdlib=libc++ -I/usr/local/Cellar/leveldb/1.20/include"
+    os.environ['LDFLAGS'] = "-L/usr/local/Cellar/leveldb/1.20/lib"
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
 setup(
+
     name="lbryum-server",
     packages=find_packages(base_dir),
     version=lbryumserver.__version__,

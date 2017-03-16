@@ -7,6 +7,8 @@ import time
 import threading
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 
+from lbryumserver.schema import decode_claim_value
+
 from lbryumserver import deserialize
 from lbryumserver.processor import Processor, print_log
 from lbryumserver.storage import Storage
@@ -431,7 +433,7 @@ class BlockchainProcessor(Processor):
                 if out is not False:
                     claim, claim_script = out
                     if type(claim) == deserialize.ClaimUpdate:
-                        if not self._update_is_valid(claim, txid,nout):
+                        if not self._update_is_valid(claim, txid, nout):
                             print_log('Found invalid claim update for {}'.format(claim.name))
                             continue
                         if revert:
@@ -440,6 +442,9 @@ class BlockchainProcessor(Processor):
                             self.storage.revert_claim(claim, txid, nout, undo_claim_info)
                         else:
                             print_log('Importing name update for {}, {}:{}'.format(claim.name, txid, nout))
+
+                            decode_claim_value(claim.name, claim.value)
+
                             undo_claim_info = self.storage.import_claim(claim, txid, nout)
                             self.storage.write_undo_claim_info(block_height, self.lbrycrdd_height,
                                                                claim.claim_id, undo_claim_info)
@@ -449,6 +454,9 @@ class BlockchainProcessor(Processor):
                             self.storage.revert_claim(claim, txid, nout)
                         else:
                             print_log('Importing name claim {}, {}:{}'.format(claim.name, txid, nout))
+
+                            decode_claim_value(claim.name, claim.value)
+
                             self.storage.import_claim(claim, txid, nout)
 
 
